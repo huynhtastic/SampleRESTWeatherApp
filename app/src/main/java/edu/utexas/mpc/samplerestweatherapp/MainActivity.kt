@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
                     //textView.text = response
                     mostRecentWeatherResult = gson.fromJson(response, WeatherResult::class.java)
                     textView.text = mostRecentWeatherResult.weather.get(0).main
-                    picasso.load('http://openweathermap.org/img/w/' + mostRecentWeatherResult.weather.get(0).icon).into(imgView)
+                    picasso.load("http://openweathermap.org/img/w/" + mostRecentWeatherResult.weather.get(0).icon).into(imgView)
 
                 },
                 com.android.volley.Response.ErrorListener { println("******That didn't work!") }) {}
