@@ -8,7 +8,7 @@ import com.android.volley.RequestQueue
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.google.gson.Gson
-import com.squareup.picasso.picasso
+import com.squareup.picasso.Picasso
 
 class MainActivity : AppCompatActivity() {
 
@@ -44,6 +44,8 @@ class MainActivity : AppCompatActivity() {
                     //textView.text = response
                     mostRecentWeatherResult = gson.fromJson(response, WeatherResult::class.java)
                     textView.text = mostRecentWeatherResult.weather.get(0).main
+                    val picassoBuilder = Picasso.Builder(this)
+                    val picasso = picassoBuilder.build()
                     picasso.load("http://openweathermap.org/img/w/" + mostRecentWeatherResult.weather.get(0).icon).into(imgView)
 
                 },
