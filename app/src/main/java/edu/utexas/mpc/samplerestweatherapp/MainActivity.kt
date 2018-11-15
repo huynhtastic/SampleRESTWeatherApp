@@ -39,7 +39,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun requestWeather(){
-        val url = StringBuilder("https://api.openweathermap.org/data/2.5/weather?id=4254010&appid=").toString()
+        val sb = StringBuilder("https://api.openweathermap.org/data/2.5/weather?id=4254010&appid=")
+        sb.append(getString(R.string.api))
+        val url = sb.toString()
         val stringRequest = object : StringRequest(com.android.volley.Request.Method.GET, url,
                 com.android.volley.Response.Listener<String> { response ->
                     //textView.text = response
