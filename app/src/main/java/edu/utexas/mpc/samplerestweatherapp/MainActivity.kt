@@ -9,7 +9,7 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.google.gson.Gson
 import com.squareup.picasso.Picasso
-
+import kotlinx.android.synthetic.main.activity_main.imgView
 
 class MainActivity : AppCompatActivity() {
 
@@ -45,12 +45,17 @@ class MainActivity : AppCompatActivity() {
         val stringRequest = object : StringRequest(com.android.volley.Request.Method.GET, url,
                 com.android.volley.Response.Listener<String> { response ->
                     //textView.text = response
+                    val sbWeather = StringBuilder()
                     mostRecentWeatherResult = gson.fromJson(response, WeatherResult::class.java)
-                    textView.text = mostRecentWeatherResult.weather.get(0).main
+                    sbWeather.append(mostRecentWeatherResult.name)
+                    sbWeather.append(System.getProperty("line.separator"))
+                    sbWeather.append(mostRecentWeatherResult.weather.get(0).main)
+                    sbWeather.append(System.getProperty("line.separator"))
+
+                    textView.text = sbWeather.toString()
                     val picassoBuilder = Picasso.Builder(this)
                     val picasso = picassoBuilder.build()
-                    picasso.load("http://openweathermap.org/img/w/" + mostRecentWeatherResult.weather.get(0).icon).into(imgView)
-
+                    picasso.load("http://openweathermap.org/img/w/" + mostRecentWeatherResult.weather.get(0).icon + ".png").into(imgView)
                 },
                 com.android.volley.Response.ErrorListener { println("******That didn't work!") }) {}
         // Add the request to the RequestQueue.
