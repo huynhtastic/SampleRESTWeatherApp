@@ -183,6 +183,10 @@ class MainActivity : AppCompatActivity() {
                     textView4.text = sbTemp_str.toString()
 
 
+                    // Send humidity
+                    sb_android.append("humidity: ")
+                    sb_android.append(mostRecentWeatherResult.main.humidity)
+                    sb_android.append(System.getProperty("line.separator"))
 
                     // Get the icon for the icon
                     val picassoBuilder = Picasso.Builder(this)
