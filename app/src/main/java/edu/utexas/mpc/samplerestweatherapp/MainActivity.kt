@@ -9,7 +9,15 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.google.gson.Gson
 import com.squareup.picasso.Picasso
+import org.eclipse.paho.android.service.MqttAndroidClient
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended
+import org.eclipse.paho.client.mqttv3.MqttMessage
+
 import kotlinx.android.synthetic.main.activity_main.imgView
+import kotlinx.android.synthetic.main.activity_main.mqttStatus
+import kotlinx.android.synthetic.main.activity_main.stepsButton
+import kotlinx.android.synthetic.main.activity_main.stepsText
 
 class MainActivity : AppCompatActivity() {
 
@@ -22,7 +30,13 @@ class MainActivity : AppCompatActivity() {
     lateinit var queue: RequestQueue
     lateinit var gson: Gson
     lateinit var mostRecentWeatherResult: WeatherResult
+    lateinit var mqttAndroidClient: MqttAndroidClient
 
+    val serverUri = "tcp://192.168.4.1:1883"
+    val clientId = "EmergingTechMQTTClient"
+
+    val subscribeTopic = "stepsTopic1"
+    val publishTopic = "weatherTopic"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,22 +50,54 @@ class MainActivity : AppCompatActivity() {
 
         queue = Volley.newRequestQueue(this)
         gson = Gson()
+
+        mqttAndroidClient = MqttAndroidClient(getApplicationContext(), serverUri, clientId)
+        println("+++++++ Connecting...")
+        mqttAndroidClient.connect()
+        stepsButton.setOnClickListener({ syncWithPi() })
+        mqttAndroidClient.setCallback(object: MqttCallbackExtended {
+
+            // when the client is successfully connected to the broker, this method gets called
+            override fun connectComplete(reconnect: Boolean, serverURI: String?) {
+                println("Connection Complete!!")
+                mqttStatus.text = getString(R.string.mqttc)
+                // this subscribes the client to the subscribe topic
+                mqttAndroidClient.subscribe(subscribeTopic, 0)
+            }
+
+            // this method is called when a message is received that fulfills a subscription
+            override fun messageArrived(topic: String?, message: MqttMessage?) {
+                println(message)
+                stepsText.text = message.toString()
+            }
+
+            override fun connectionLost(cause: Throwable?) {
+                println("Connection Lost")
+                mqttStatus.text = getString(R.string.mqttd)
+            }
+
+            // this method is called when the client succcessfully publishes to the broker
+            override fun deliveryComplete(token: IMqttDeliveryToken?) {
+                println("Delivery Complete")
+            }
+        })
     }
 
     fun requestWeather(){
-        val sb = StringBuilder("https://api.openweathermap.org/data/2.5/weather?id=4254010&appid=")
+        val sb = StringBuilder("https://api.openweathermap.org/data/2.5/weather?id=4254010&appid=" )
         sb.append(getString(R.string.api))
         val url = sb.toString()
         val stringRequest = object : StringRequest(com.android.volley.Request.Method.GET, url,
                 com.android.volley.Response.Listener<String> { response ->
                     //textView.text = response
                     val sbWeather = StringBuilder()
+
                     mostRecentWeatherResult = gson.fromJson(response, WeatherResult::class.java)
                     sbWeather.append(mostRecentWeatherResult.name)
                     sbWeather.append(System.getProperty("line.separator"))
                     sbWeather.append(mostRecentWeatherResult.weather.get(0).main)
                     sbWeather.append(System.getProperty("line.separator"))
-
+                    sbWeather.append(mostRecentWeatherResult)
                     textView.text = sbWeather.toString()
                     val picassoBuilder = Picasso.Builder(this)
                     val picasso = picassoBuilder.build()
@@ -60,6 +106,15 @@ class MainActivity : AppCompatActivity() {
                 com.android.volley.Response.ErrorListener { println("******That didn't work!") }) {}
         // Add the request to the RequestQueue.
         queue.add(stringRequest)
+    }
+
+    fun syncWithPi(){
+
+        val message = MqttMessage()
+        message.payload = ("Hello World").toByteArray()
+
+        // this publishes a message to the publish topic
+        mqttAndroidClient.publish(publishTopic, message)
     }
 }
 
