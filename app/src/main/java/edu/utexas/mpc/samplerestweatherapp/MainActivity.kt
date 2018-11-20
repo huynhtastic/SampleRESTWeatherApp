@@ -39,6 +39,9 @@ class MainActivity : AppCompatActivity() {
     val subscribeTopic = "stepsTopic1"
     val publishTopic = "weatherTopic"
 
+    // store information to send to pi
+    var sb_android = StringBuilder()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -102,11 +105,17 @@ class MainActivity : AppCompatActivity() {
 
                     // Get the city name
                     sbWeather.append(mostRecentWeatherResult.name)
+                    sb_android.append("City: ")
+                    sb_android.append(mostRecentWeatherResult.name)
+                    sb_android.append(System.getProperty("line.separator"))
                     sbWeather.append(System.getProperty("line.separator"))
 
                     // Get the weather type e.g. mist, sun, clear, rain, etc
                     sbWeather.append(mostRecentWeatherResult.weather.get(0).main)
                     sbWeather.append(System.getProperty("line.separator"))
+                    sb_android.append("Weather: ")
+                    sb_android.append(mostRecentWeatherResult.weather.get(0).main)
+                    sb_android.append(System.getProperty("line.separator"))
                     // Display city name and weather type onto android app as a textView
                     textView.text = sbWeather.toString()
 
@@ -125,6 +134,10 @@ class MainActivity : AppCompatActivity() {
                     sbTemp_str.append(System.getProperty("line.separator"))
                     sbTemp_str.append(String.format("%.2f", sbTemp_num))
                     sbTemp_str.append("°F")
+                    sb_android.append("Current Temp: ")
+                    sb_android.append(String.format("%.2f", sbTemp_num))
+                    sb_android.append("°F")
+                    sb_android.append(System.getProperty("line.separator"))
                     // Display weather temp onto android app as a textView
                     textView2.text = sbTemp_str.toString()
 
@@ -140,6 +153,10 @@ class MainActivity : AppCompatActivity() {
                     sbTemp_str.append(System.getProperty("line.separator"))
                     sbTemp_str.append(String.format("%.2f", sbTemp_num))
                     sbTemp_str.append("°F")
+                    sb_android.append("Minimum Temp: ")
+                    sb_android.append(String.format("%.2f", sbTemp_num))
+                    sb_android.append("°F")
+                    sb_android.append(System.getProperty("line.separator"))
                     // Display weather temp onto android app as a textView
                     textView3.text = sbTemp_str.toString()
 
@@ -155,6 +172,10 @@ class MainActivity : AppCompatActivity() {
                     sbTemp_str.append(System.getProperty("line.separator"))
                     sbTemp_str.append(String.format("%.2f", sbTemp_num))
                     sbTemp_str.append("°F")
+                    sb_android.append("Maximum Temp: ")
+                    sb_android.append(String.format("%.2f", sbTemp_num))
+                    sb_android.append("°F")
+                    sb_android.append(System.getProperty("line.separator"))
                     // Display weather temp onto android app as a textView
                     textView4.text = sbTemp_str.toString()
 
@@ -174,10 +195,10 @@ class MainActivity : AppCompatActivity() {
         mqttAndroidClient.connect()
     }
 
-    fun sendWeather(){
+    fun sendWeather(sb: StringBuilder){
 
         val message = MqttMessage()
-        message.payload = ("Hello World").toByteArray()
+        message.payload = (sb.toString()).toByteArray()
 
         // this publishes a message to the publish topic
         mqttAndroidClient.publish(publishTopic, message)
