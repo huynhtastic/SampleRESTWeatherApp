@@ -14,7 +14,7 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
-import kotlinx.android.synthetic.main.activity_main.view.*
+import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -59,7 +59,8 @@ class MainActivity : AppCompatActivity() {
         mqttAndroidClient = MqttAndroidClient(getApplicationContext(), serverUri, clientId)
         println("+++++++ Connecting...")
         mqttAndroidClient.connect()
-        stepsButton.setOnClickListener({ syncWithPi() })
+        sendWeather.setOnClickListener({ sendWeather() })
+        syncButton.setOnClickListener({ syncWithPi() })
         mqttAndroidClient.setCallback(object: MqttCallbackExtended {
 
             // when the client is successfully connected to the broker, this method gets called
@@ -169,7 +170,11 @@ class MainActivity : AppCompatActivity() {
         queue.add(stringRequest)
     }
 
-    fun syncWithPi(){
+    fun syncWithPi() {
+        mqttAndroidClient.connect()
+    }
+
+    fun sendWeather(){
 
         val message = MqttMessage()
         message.payload = ("Hello World").toByteArray()
