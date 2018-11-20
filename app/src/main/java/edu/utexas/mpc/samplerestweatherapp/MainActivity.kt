@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity() {
         mqttAndroidClient = MqttAndroidClient(getApplicationContext(), serverUri, clientId)
         println("+++++++ Connecting...")
         mqttAndroidClient.connect()
-        sendWeather.setOnClickListener({ sendWeather() })
+        sendWeather.setOnClickListener({ sendWeather(sb_android) })
         syncButton.setOnClickListener({ syncWithPi() })
         mqttAndroidClient.setCallback(object: MqttCallbackExtended {
 
