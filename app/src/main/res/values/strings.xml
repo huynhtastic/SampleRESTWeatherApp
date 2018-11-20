@@ -2,4 +2,6 @@
     <string name="app_name">SampleRESTWeatherApp</string>
     <string name="mqttc">MQTT Broker Status: Connected</string>
     <string name="mqttd">MQTT Broker Status: Disconnected</string>
+    <string name="ziphint">Zip Code</string>
+    <string name="steps">Steps:\ </string>
 </resources>
