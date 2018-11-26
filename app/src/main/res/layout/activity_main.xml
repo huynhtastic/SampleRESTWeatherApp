@@ -103,6 +103,14 @@
         app:layout_constraintTop_toBottomOf="@+id/texttemp"
         app:layout_constraintVertical_bias="0.095" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/yesterdayText"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/stepsText"
+        android:text="Yesterday"/>
 
     <TextView
         android:id="@+id/stepsText"

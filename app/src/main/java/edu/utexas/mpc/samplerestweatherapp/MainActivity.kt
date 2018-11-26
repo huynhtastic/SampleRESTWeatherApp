@@ -2,6 +2,7 @@ package edu.utexas.mpc.samplerestweatherapp
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import com.android.volley.RequestQueue
@@ -36,7 +37,8 @@ class MainActivity : AppCompatActivity() {
     val serverUri = "tcp://192.168.4.1:1883"
     val clientId = "EmergingTechMQTTClient"
 
-    val subscribeTopic = "stepsTopic1"
+    val subscribeTopic = "goalTopic"
+    val yesterdayTopic = "yesterdayTopic"
     val publishTopic = "weatherTopic"
 
     // store information to send to pi
@@ -72,12 +74,26 @@ class MainActivity : AppCompatActivity() {
                 mqttStatus.text = getString(R.string.mqttc)
                 // this subscribes the client to the subscribe topic
                 mqttAndroidClient.subscribe(subscribeTopic, 0)
+                mqttAndroidClient.subscribe(yesterdayTopic, 0)
             }
 
             // this method is called when a message is received that fulfills a subscription
             override fun messageArrived(topic: String?, message: MqttMessage?) {
-                println(message)
-                stepsText.text = message.toString()
+                println("Received")
+                Log.d("mqttmessage", topic)
+                if (topic.equals(subscribeTopic)) {
+                    if (message.toString().toBoolean()) {
+                        stepsText.text = "You've reached your step goal for today!"
+                    } else {
+                        stepsText.text = "You still need some steps to reach today's step goal!"
+                    }
+                } else if (topic.equals(yesterdayTopic)) {
+                    if (message.toString().toBoolean()) {
+                        yesterdayText.text = "Great job! You reached your goal yesterday."
+                    } else {
+                        yesterdayText.text = "You didn't reach your goal yesterday."
+                    }
+                }
             }
 
             override fun connectionLost(cause: Throwable?) {
