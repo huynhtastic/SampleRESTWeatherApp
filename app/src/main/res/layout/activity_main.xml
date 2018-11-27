@@ -90,18 +90,6 @@
         app:layout_constraintTop_toBottomOf="@id/imgView"
         app:layout_constraintLeft_toRightOf="@id/texttemp"/>
 
-    <Button
-        android:id="@+id/sendWeather"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Send Weather"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/texttemp"
-        app:layout_constraintVertical_bias="0.095" />
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

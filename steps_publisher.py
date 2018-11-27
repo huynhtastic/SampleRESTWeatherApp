@@ -1,7 +1,9 @@
 import datetime
-import fileinput
+import os
 import re
 import time
+
+from pdb import set_trace as st
 
 import aioblescan as aiobs
 import asyncio
@@ -9,18 +11,19 @@ import paho.mqtt.client as mqtt
 from aioblescan.plugins import EddyStone
 
 
+history_file = os.path.join(os.path.dirname(__file__), 'step_history.csv')
 broker_address = '192.168.4.1'
 publish_topic = 'goalTopic'
 subscribe_topic = 'weatherTopic'
 yesterday_topic = 'yesterdayTopic'
+prompt_topic = 'promptTopic'
 today = datetime.datetime.now().date()
 goal = 999999  # goal needs to be calculated
 steps = 0
 
 def _yesterday_goal_met():
     yst = (datetime.datetime.now() - datetime.timedelta(days=1)).date()
-    import pdb; pdb.set_trace()
-    with open('step_history.csv', 'r') as inf:
+    with open(history_file, 'r') as inf:
         for line in inf:
             entry = [item.strip() for item in line.split(',')]
             try:
@@ -46,10 +49,9 @@ def _process_packet(data):
             steps = match.groups()[1]
             print('Publishing steps...')
             client.publish(publish_topic, _determine_goal_met())
-            with open('step_history.csv', 'r') as inf:
+            with open(history_file, 'r') as inf:
                 lines = inf.read().strip()
-            #with fileinput.FileInput('step_history.csv', inplace=True, backup='.bak') as outf:
-            with open('step_history.csv', 'w') as outf:
+            with open(history_file, 'w') as outf:
                 new_entry = '{},{},{}'.format(str(today),steps,goal)
                 found = False
                 for line in lines.split('\n'):
@@ -69,13 +71,15 @@ def _determine_goal_met():
     return steps >= goal
 
 def _on_mqtt_message_received(client, userdata, message):
+    global goal
     payload = str(message.payload.decode('utf-8'))
     print("message received\n" + payload)
-    print(yesterday_topic, _yesterday_goal_met())
-    client.publish(yesterday_topic, _yesterday_goal_met())
+    if payload:
+        goal = _predict_steps(payload)
     print('Today\'s goal: {} steps'.format(goal))
     print('User has {} steps recorded\n'.format(steps))
-    goal = _predict_steps(payload)
+    client.publish(yesterday_topic, _yesterday_goal_met())
+    client.publish(publish_topic, _determine_goal_met())
 
 def _predict_steps(inp):
     numbers_regex = r'.*\s([\d\.]+).*'
@@ -101,6 +105,7 @@ if __name__ == '__main__':
     client.on_message = _on_mqtt_message_received
     client.loop_start()
     client.subscribe(subscribe_topic)
+    client.subscribe(prompt_topic)
 
     try:
         event_loop.run_forever()  # runs our bluetooth scan until we send a keyboard interrupt signal
