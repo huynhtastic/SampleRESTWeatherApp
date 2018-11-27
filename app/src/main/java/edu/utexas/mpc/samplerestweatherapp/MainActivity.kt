@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var queue: RequestQueue
     lateinit var gson: Gson
     lateinit var mostRecentWeatherResult: WeatherResult
+    lateinit var mostRecentForecastResult: ForecastResult
     lateinit var mqttAndroidClient: MqttAndroidClient
 
     val serverUri = "tcp://192.168.4.1:1883"
@@ -110,8 +111,10 @@ class MainActivity : AppCompatActivity() {
 
     fun requestWeather(){
 
+        // today's weather
         val sb = StringBuilder("https://api.openweathermap.org/data/2.5/weather?zip=")
         sb.append(zip.getText().toString())
+        // unique app id key
         sb.append("&appid=" )
         sb.append(getString(R.string.api))
         val url = sb.toString()
@@ -203,6 +206,7 @@ class MainActivity : AppCompatActivity() {
                     sb_android.append("humidity: ")
                     sb_android.append(mostRecentWeatherResult.main.humidity)
                     sb_android.append(System.getProperty("line.separator"))
+                    sb_android.append(System.getProperty("line.separator"))
 
                     // Get the icon for the icon
                     val picassoBuilder = Picasso.Builder(this)
@@ -212,6 +216,75 @@ class MainActivity : AppCompatActivity() {
                 com.android.volley.Response.ErrorListener { println("******That didn't work!") }) {}
         // Add the request to the RequestQueue.
         queue.add(stringRequest)
+
+        // Forecast
+        val sb2 = StringBuilder("https://api.openweathermap.org/data/2.5/forecast?zip=")
+        sb2.append(zip.getText().toString())
+        // unique app id key
+        sb2.append("&appid=" )
+        sb2.append(getString(R.string.api))
+        val url2 = sb2.toString()
+
+        val stringRequest2 = object : StringRequest(com.android.volley.Request.Method.GET, url2,
+                com.android.volley.Response.Listener<String> { response ->
+
+                    // Used to make the API call for json
+                    mostRecentForecastResult = gson.fromJson(response, ForecastResult::class.java)
+
+                    // Because the api results in forecasts every 3 hours for 5 days, grab the 8th one because its exactly 24 hours from now
+                    var theForecast = mostRecentForecastResult.list.get(7)
+
+                    // lambda function to convert Kelvin to Fahrenheit
+                    val convert_to_f = { x: Float -> (x - 273.15) * (9/5) + 32 }
+
+                    // Get the weather temp
+                    var sbTemp_str = StringBuilder()
+                    sbTemp_str.append(theForecast.main.temp)
+                    // convert Kelvin to Fahrenheit
+                    var sbTemp_num = sbTemp_str.toString().toFloat()
+                    sbTemp_num = convert_to_f(sbTemp_num).toFloat()
+                    // Throw converted temperature into a string builder
+                    sb_android.append("Tomorrow's Forecast")
+                    sb_android.append(System.getProperty("line.separator"))
+                    sb_android.append("Temp: ")
+                    sb_android.append(String.format("%.2f", sbTemp_num))
+                    sb_android.append("°F")
+                    sb_android.append(System.getProperty("line.separator"))
+
+                    // Get the min weather temp
+                    sbTemp_str = StringBuilder()
+                    sbTemp_str.append(theForecast.main.temp_min)
+                    // convert Kelvin to Fahrenheit
+                    sbTemp_num = sbTemp_str.toString().toFloat()
+                    sbTemp_num = convert_to_f(sbTemp_num).toFloat()
+                    // Throw converted temperature into a string builder
+                    sb_android.append("Minimum Temp: ")
+                    sb_android.append(String.format("%.2f", sbTemp_num))
+                    sb_android.append("°F")
+                    sb_android.append(System.getProperty("line.separator"))
+
+                    // Get the max weather temp
+                    sbTemp_str = StringBuilder()
+                    sbTemp_str.append(theForecast.main.temp_max)
+                    // convert Kelvin to Fahrenheit
+                    sbTemp_num = sbTemp_str.toString().toFloat()
+                    sbTemp_num = convert_to_f(sbTemp_num).toFloat()
+                    // Throw converted temperature into a string builder
+                    sb_android.append("Maximum Temp: ")
+                    sb_android.append(String.format("%.2f", sbTemp_num))
+                    sb_android.append("°F")
+                    sb_android.append(System.getProperty("line.separator"))
+
+                    // Send humidity
+                    sb_android.append("Humidity: ")
+                    sb_android.append(theForecast.main.humidity)
+                    sb_android.append(System.getProperty("line.separator"))
+
+
+                },
+                com.android.volley.Response.ErrorListener { println("******That didn't work!") }) {}
+        // Add the request to the RequestQueue.
+        queue.add(stringRequest2)
     }
 
     fun syncWithPi() {
@@ -228,7 +301,13 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
+
+// Format of JSON objects as a result of the API calls
 class WeatherResult(val id: Int, val name: String, val cod: Int, val coord: Coordinates, val main: WeatherMain, val weather: Array<Weather>)
 class Coordinates(val lon: Double, val lat: Double)
 class Weather(val id: Int, val main: String, val description: String, val icon: String)
 class WeatherMain(val temp: Double, val pressure: Int, val humidity: Int, val temp_min: Double, val temp_max: Double)
+
+class ForecastResult(val list: Array<Forecast>)
+class Forecast(val dt: Int, val main: ForecastMain, val weather: Array<Weather>)
+class ForecastMain(val temp: Double, val temp_min: Double, val temp_max: Double, val pressure: Double, val humidity: Int )
