@@ -217,10 +217,12 @@ class MainActivity : AppCompatActivity() {
 
     fun syncWithPi() {
         println(mqttAndroidClient.isConnected())
-        if (!mqttAndroidClient.isConnected()) { mqttAndroidClient.connect() }
-
-        if (mqttAndroidClient.isConnected()) { publishWeather() }
-
+        if (!mqttAndroidClient.isConnected()) {
+            mqttAndroidClient.connect()
+        } else {
+            mqttStatus.text = getString(R.string.mqttc);
+            publishWeather()
+        }
     }
 
     fun publishWeather() {
