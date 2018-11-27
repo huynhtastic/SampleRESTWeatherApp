@@ -64,7 +64,6 @@ class MainActivity : AppCompatActivity() {
         mqttAndroidClient = MqttAndroidClient(getApplicationContext(), serverUri, clientId)
         println("+++++++ Connecting...")
         mqttAndroidClient.connect()
-        sendWeather.setOnClickListener({ sendWeather(sb_android) })
         syncButton.setOnClickListener({ syncWithPi() })
         mqttAndroidClient.setCallback(object: MqttCallbackExtended {
 
@@ -75,6 +74,8 @@ class MainActivity : AppCompatActivity() {
                 // this subscribes the client to the subscribe topic
                 mqttAndroidClient.subscribe(subscribeTopic, 0)
                 mqttAndroidClient.subscribe(yesterdayTopic, 0)
+
+                publishWeather()
             }
 
             // this method is called when a message is received that fulfills a subscription
@@ -215,13 +216,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun syncWithPi() {
-        mqttAndroidClient.connect()
+        println(mqttAndroidClient.isConnected())
+        if (!mqttAndroidClient.isConnected()) { mqttAndroidClient.connect() }
+
+        if (mqttAndroidClient.isConnected()) { publishWeather() }
+
     }
 
-    fun sendWeather(sb: StringBuilder){
-
+    fun publishWeather() {
         val message = MqttMessage()
-        message.payload = (sb.toString()).toByteArray()
+        message.payload = (sb_android.toString()).toByteArray()
 
         // this publishes a message to the publish topic
         mqttAndroidClient.publish(publishTopic, message)
