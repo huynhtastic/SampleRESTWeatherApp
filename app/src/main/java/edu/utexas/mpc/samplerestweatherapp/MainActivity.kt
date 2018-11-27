@@ -232,4 +232,3 @@ class WeatherResult(val id: Int, val name: String, val cod: Int, val coord: Coor
 class Coordinates(val lon: Double, val lat: Double)
 class Weather(val id: Int, val main: String, val description: String, val icon: String)
 class WeatherMain(val temp: Double, val pressure: Int, val humidity: Int, val temp_min: Double, val temp_max: Double)
-
