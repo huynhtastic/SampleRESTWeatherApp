@@ -1,8 +1,13 @@
 package edu.utexas.mpc.samplerestweatherapp
 
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.Typeface
+import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import com.android.volley.RequestQueue
@@ -16,6 +21,8 @@ import org.eclipse.paho.client.mqttv3.MqttCallbackExtended
 import org.eclipse.paho.client.mqttv3.MqttMessage
 
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_main.view.*
+import java.security.AccessController.getContext
 
 class MainActivity : AppCompatActivity() {
 
@@ -27,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var textView2: TextView
     lateinit var textView3: TextView
     lateinit var textView4: TextView
+    lateinit var textView_prompt_user: TextView
 
 
     lateinit var queue: RequestQueue
@@ -48,6 +56,12 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        // remove title bar
+        this.supportActionBar!!.hide()
+
+        // edit the status bar
+        this.window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        this.window.statusBarColor = Color.WHITE
 
         // reference the activity_main xml
         textView = this.findViewById(R.id.text)
@@ -55,16 +69,30 @@ class MainActivity : AppCompatActivity() {
         textView3 = this.findViewById(R.id.textmintemp)
         textView4 = this.findViewById(R.id.textmaxtemp)
         retrieveButton = this.findViewById(R.id.retrieveButton)
+        textView_prompt_user = this.findViewById(R.id.prompt_user)
 
-        // when the user presses the syncbutton, this method will get called
+
+
+
+        // hide the buttons
+        nobutton.visibility = View.GONE
+        syncButton.visibility = View.GONE
+
+        // when the user presses the YES button, this method will get called
         retrieveButton.setOnClickListener({ requestWeather() })
+
+        // when the user presses the NO button this method will be called
+        nobutton.setOnClickListener({ startActivity(Intent(WifiManager.ACTION_PICK_WIFI_NETWORK)) })
 
         queue = Volley.newRequestQueue(this)
         gson = Gson()
 
-        mqttAndroidClient = MqttAndroidClient(getApplicationContext(), serverUri, clientId)
+        mqttAndroidClient = MqttAndroidClient(applicationContext, serverUri, clientId)
         println("+++++++ Connecting...")
         mqttAndroidClient.connect()
+
+
+
         syncButton.setOnClickListener({ syncWithPi() })
         mqttAndroidClient.setCallback(object: MqttCallbackExtended {
 
@@ -114,7 +142,7 @@ class MainActivity : AppCompatActivity() {
 
         // today's weather
         val sb = StringBuilder("https://api.openweathermap.org/data/2.5/weather?zip=")
-        sb.append(zip.getText().toString())
+        sb.append(zip.text.toString())
         // unique app id key
         sb.append("&appid=" )
         sb.append(getString(R.string.api))
@@ -123,6 +151,7 @@ class MainActivity : AppCompatActivity() {
                 com.android.volley.Response.Listener<String> { response ->
                     //textView.text = response
                     val sbWeather = StringBuilder()
+                    val sbWeathertype = StringBuilder()
 
                     mostRecentWeatherResult = gson.fromJson(response, WeatherResult::class.java)
 
@@ -134,12 +163,12 @@ class MainActivity : AppCompatActivity() {
                     sbWeather.append(System.getProperty("line.separator"))
 
                     // Get the weather type e.g. mist, sun, clear, rain, etc
-                    sbWeather.append(mostRecentWeatherResult.weather.get(0).main)
-                    sbWeather.append(System.getProperty("line.separator"))
+                    sbWeathertype.append(mostRecentWeatherResult.weather.get(0).main)
                     sb_android.append("Weather: ")
                     sb_android.append(mostRecentWeatherResult.weather.get(0).main)
                     sb_android.append(System.getProperty("line.separator"))
                     // Display city name and weather type onto android app as a textView
+                    weathertype.text =  sbWeathertype.toString()
                     textView.text = sbWeather.toString()
 
                     // lambda function to convert Kelvin to Fahrenheit
@@ -220,7 +249,7 @@ class MainActivity : AppCompatActivity() {
 
         // Forecast
         val sb2 = StringBuilder("https://api.openweathermap.org/data/2.5/forecast?zip=")
-        sb2.append(zip.getText().toString())
+        sb2.append(zip.text.toString())
         // unique app id key
         sb2.append("&appid=" )
         sb2.append(getString(R.string.api))
@@ -286,14 +315,27 @@ class MainActivity : AppCompatActivity() {
                 com.android.volley.Response.ErrorListener { println("******That didn't work!") }) {}
         // Add the request to the RequestQueue.
         queue.add(stringRequest2)
+
+        startActivity(Intent(WifiManager.ACTION_PICK_WIFI_NETWORK))
+
+        // wait a sec before showing the new view
+        Thread.sleep(1_000)
+
+        // play with the font
+        val typeface = resources.getFont(R.font.pacifico)
+        textView.typeface = typeface
+
+        textView_prompt_user.text = "Have you changed to the appropriate Network?"
+        nobutton.visibility = View.VISIBLE
+        syncButton.visibility = View.VISIBLE
     }
 
     fun syncWithPi() {
-        println(mqttAndroidClient.isConnected())
-        if (!mqttAndroidClient.isConnected()) {
+        println(mqttAndroidClient.isConnected)
+        if (!mqttAndroidClient.isConnected) {
             mqttAndroidClient.connect()
         } else {
-            mqttStatus.text = getString(R.string.mqttc);
+            mqttStatus.text = getString(R.string.mqttc)
             publishWeather()
         }
     }
