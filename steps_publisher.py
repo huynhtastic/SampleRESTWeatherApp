@@ -19,6 +19,7 @@ yesterday_topic = 'yesterdayTopic'
 prompt_topic = 'promptTopic'
 today = datetime.datetime.now().date()
 goal = 999999  # goal needs to be calculated
+tmr_goal = 999999
 steps = 0
 
 def _yesterday_goal_met():
@@ -72,23 +73,31 @@ def _determine_goal_met():
 
 def _on_mqtt_message_received(client, userdata, message):
     global goal
+    global tmr_goal
     payload = str(message.payload.decode('utf-8'))
     print("message received\n" + payload)
     if payload:
-        goal = _predict_steps(payload)
+        goal, tmr_goal = _predict_steps(payload)
     print('Today\'s goal: {} steps'.format(goal))
+    print('Tomorrow\'s goal: {} steps'.format(tmr_goal))
     print('User has {} steps recorded\n'.format(steps))
     client.publish(yesterday_topic, _yesterday_goal_met())
     client.publish(publish_topic, _determine_goal_met())
 
 def _predict_steps(inp):
     numbers_regex = r'.*\s([\d\.]+).*'
-    inp = [float(re.match(numbers_regex, line).groups()[0]) for line in inp.split('\n')[3:-1]]
+    inp = [float(re.match(numbers_regex, line).groups()[0])
+            for line in inp.split('\n')[3:-1] if re.match(numbers_regex, line)]
+
     weights = [41.13028054, -11.34748777, 28.91362573]
+    offset = 1215.23927059
     steps = 0
+    tmr_steps = 0
     for i in range(3):
         steps += weights[i] * inp[i]
-    return round(steps + 1215.23927059)
+        tmr_steps += weights[i] * inp[-3+i]
+
+    return round(steps + offset), round(tmr_steps + offset)
 
 if __name__ == '__main__':
     mydev = 0
