@@ -172,14 +172,22 @@ class MainActivity : AppCompatActivity() {
                     textView.text = sbWeather.toString()
 
                     // lambda function to convert Kelvin to Fahrenheit
-                    val convert_to_f = { x: Float -> (x - 273.15) * (9/5) + 32 }
+                    val convert_to_f = { x: Float -> ((x - 273.15)  * 9.0 * 0.2) + 32 }
 
                     // Get the weather temp
                     var sbTemp_str = StringBuilder()
                     sbTemp_str.append(mostRecentWeatherResult.main.temp)
+
                     // convert Kelvin to Fahrenheit
                     var sbTemp_num = sbTemp_str.toString().toFloat()
+                    println("This is the temp")
+                    println(sbTemp_num.toString())
+
                     sbTemp_num = convert_to_f(sbTemp_num).toFloat()
+                    println("\nThis is the converted temp")
+                    println(sbTemp_num.toString())
+
+
                     // Throw converted temperature into a string builder
                     sbTemp_str = StringBuilder()
                     sbTemp_str.append("Current")
