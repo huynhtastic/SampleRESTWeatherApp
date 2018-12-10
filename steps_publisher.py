@@ -14,6 +14,8 @@ from bluezero import microbit
 import paho.mqtt.client as mqtt
 from aioblescan.plugins import EddyStone
 
+from linreg import LinReg
+
 
 history_file = os.path.join(os.path.dirname(__file__), 'step_history.csv')
 broker_address = '192.168.4.1'
@@ -25,6 +27,7 @@ today = datetime.datetime.now().date()
 goal = 999999  # goal needs to be calculated
 tmr_goal = 999999
 steps = 0
+model = LinReg(theta=np.array([[1215.23927059, 41.13028054, -11.34748777, 28.91362573]]))
 
 def _yesterday_goal_met():
     yst = (datetime.datetime.now() - datetime.timedelta(days=1)).date()
@@ -95,15 +98,16 @@ def _predict_steps(inp):
     inp = [float(re.match(numbers_regex, line).groups()[0])
             for line in inp.split('\n')[3:-1] if re.match(numbers_regex, line)]
 
-    weights = [41.13028054, -11.34748777, 28.91362573]
-    offset = 1215.23927059
-    today_steps = 0
-    tmr_steps = 0
-    for i in range(3):
-        today_steps += weights[i] * inp[i]
-        tmr_steps += weights[i] * inp[-3+i]
+    theta, cost = model.gradientDescent(np.array([inp][3]), steps)
+    return model.predict(np.array(inp[-3:]))
 
-    return round(steps + offset), round(tmr_steps + offset)
+#    today_steps = 0
+#    tmr_steps = 0
+#    for i in range(3):
+#        today_steps += weights[i] * inp[i]
+#        tmr_steps += weights[i] * inp[-3+i]
+
+#    return round(steps + offset), round(tmr_steps + offset)
 
 if __name__ == '__main__':
     mydev = 0
