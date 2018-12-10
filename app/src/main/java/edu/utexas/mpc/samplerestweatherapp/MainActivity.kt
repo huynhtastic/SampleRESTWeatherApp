@@ -24,6 +24,11 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_main.view.*
 import java.security.AccessController.getContext
 
+
+import com.google.android.gms.location.places.GeoDataClient
+import com.google.android.gms.location.places.Places
+import com.google.android.gms.location.places.PlaceDetectionClient
+
 class MainActivity : AppCompatActivity() {
 
 
@@ -50,12 +55,24 @@ class MainActivity : AppCompatActivity() {
     val yesterdayTopic = "yesterdayTopic"
     val publishTopic = "weatherTopic"
 
+
+    lateinit var mGeoDataClient: GeoDataClient
+
     // store information to send to pi
     var sb_android = StringBuilder()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Construct a GeoDataClient.
+        mGeoDataClient = Places.getGeoDataClient(this)
+
+        // TODO: Start using the Places API.
+
+
         // remove title bar
         this.supportActionBar!!.hide()
 
