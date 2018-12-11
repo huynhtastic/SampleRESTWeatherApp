@@ -6,6 +6,7 @@ import android.graphics.Typeface
 import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.View
 import android.widget.Button
@@ -26,6 +27,7 @@ import java.security.AccessController.getContext
 
 
 import com.google.android.gms.location.places.GeoDataClient
+import com.google.android.gms.location.places.Place
 import com.google.android.gms.location.places.Places
 import com.google.android.gms.location.places.PlaceDetectionClient
 
@@ -47,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var mostRecentWeatherResult: WeatherResult
     lateinit var mostRecentForecastResult: ForecastResult
     lateinit var mqttAndroidClient: MqttAndroidClient
+    lateinit var RecentPlaceResult: PlaceResult
 
     val serverUri = "tcp://192.168.4.1:1883"
     val clientId = "EmergingTechMQTTClient"
@@ -70,7 +73,8 @@ class MainActivity : AppCompatActivity() {
         // Construct a GeoDataClient.
         mGeoDataClient = Places.getGeoDataClient(this)
 
-        // TODO: Start using the Places API.
+        // TODO: Start using the Places API
+
 
 
         // remove title bar
@@ -341,6 +345,68 @@ class MainActivity : AppCompatActivity() {
         // Add the request to the RequestQueue.
         queue.add(stringRequest2)
 
+        // places api
+        // api key
+        val kunci = getString(R.string.places_api_2)
+        var places_sb = StringBuilder("https://maps.googleapis.com/maps/api/place/textsearch/json?query=")
+        places_sb.append(zip.text.toString())
+        places_sb.append("&key=")
+        places_sb.append(kunci)
+
+        val stringRequest3 = object : StringRequest(com.android.volley.Request.Method.GET, places_sb.toString(),
+                com.android.volley.Response.Listener<String> { response ->
+                    // Used to make the API call for json
+                    RecentPlaceResult = gson.fromJson(response, PlaceResult::class.java)
+
+                    // Because the api
+                    var result_pl = RecentPlaceResult.results.get(0).formatted_address.split(" ")
+
+                    // String builder
+                    var result_place_sb = StringBuilder(result_pl.get(0))
+                    result_place_sb.append(result_pl.get(1))
+
+                    // recall the api
+                    var places_sb = StringBuilder("https://maps.googleapis.com/maps/api/place/textsearch/json?query=")
+                    places_sb.append(result_place_sb.toString())
+                    places_sb.append("&key=")
+                    places_sb.append(kunci)
+
+                    val stringRequest4 = object : StringRequest(com.android.volley.Request.Method.GET, places_sb.toString(),
+                            com.android.volley.Response.Listener<String> { response ->
+
+                                // display metrics
+                                val displayMetrics = DisplayMetrics()
+                                windowManager.defaultDisplay.getMetrics(displayMetrics)
+                                var height = displayMetrics.heightPixels
+
+
+                                // Used to make the API call for json
+                                RecentPlaceResult = gson.fromJson(response, PlaceResult::class.java)
+                                var result_pl = RecentPlaceResult.results.get(0)
+                                var result_pl_2 = result_pl.photos.get(0)
+                                var result_pl_3 = result_pl_2.photo_reference
+
+
+                                var html_photo = StringBuilder("https://maps.googleapis.com/maps/api/place/photo?maxheight=")
+                                html_photo.append(height)
+                                html_photo.append("&photoreference=")
+                                html_photo.append(result_pl_3)
+                                html_photo.append("&key=")
+                                html_photo.append(kunci)
+
+                                // Get the icon for the icon
+                                val picassoBuilder = Picasso.Builder(this)
+                                val picasso = picassoBuilder.build()
+                                picasso.load(html_photo.toString()).into(placeimg)
+
+                            },
+                            com.android.volley.Response.ErrorListener { println("******That didn't work!") }) {}
+                    // Add the request to the RequestQueue.
+                    queue.add(stringRequest4)
+                },
+                com.android.volley.Response.ErrorListener { println("******That didn't work!") }) {}
+        queue.add(stringRequest3)
+
         startActivity(Intent(WifiManager.ACTION_PICK_WIFI_NETWORK))
 
         // wait a sec before showing the new view
@@ -384,3 +450,8 @@ class WeatherMain(val temp: Double, val pressure: Int, val humidity: Int, val te
 class ForecastResult(val list: Array<Forecast>)
 class Forecast(val dt: Int, val main: ForecastMain, val weather: Array<Weather>)
 class ForecastMain(val temp: Double, val temp_min: Double, val temp_max: Double, val pressure: Double, val humidity: Int )
+
+class GooglePlace(val formatted_address: String, val photos: Array<Photo>)
+class PlaceResult(val results: Array<GooglePlace>)
+class Photo(val photo_reference: String)
+
