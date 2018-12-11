@@ -1,14 +1,20 @@
 import datetime
 import os
 import re
+import signal
+import sys
 import time
+import threading
 
 from pdb import set_trace as st
 
 import aioblescan as aiobs
 import asyncio
+from bluezero import microbit
 import paho.mqtt.client as mqtt
 from aioblescan.plugins import EddyStone
+
+from linreg import LinReg
 
 
 history_file = os.path.join(os.path.dirname(__file__), 'step_history.csv')
@@ -21,6 +27,7 @@ today = datetime.datetime.now().date()
 goal = 999999  # goal needs to be calculated
 tmr_goal = 999999
 steps = 0
+model = LinReg(theta=np.array([[1215.23927059, 41.13028054, -11.34748777, 28.91362573]]))
 
 def _yesterday_goal_met():
     yst = (datetime.datetime.now() - datetime.timedelta(days=1)).date()
@@ -38,6 +45,7 @@ def _yesterday_goal_met():
         return 'Yesterday not found'
 
 def _process_packet(data):
+    global steps
     ev = aiobs.HCI_Event()  # event is passed to HCI in between the BT controller and host stack
     xx = ev.decode(data)  # decode the signal
     xx = EddyStone().decode(ev)  # run our decoded packet through the EddyStone protocol
@@ -47,7 +55,7 @@ def _process_packet(data):
         if match:
             print('Received Eddystone Beacon Steps. Processing...')
             today = datetime.datetime.now().date()
-            steps = match.groups()[1]
+            steps = int(match.groups()[1])
             print('Publishing steps...')
             client.publish(publish_topic, _determine_goal_met())
             with open(history_file, 'r') as inf:
@@ -74,6 +82,7 @@ def _determine_goal_met():
 def _on_mqtt_message_received(client, userdata, message):
     global goal
     global tmr_goal
+    global steps
     payload = str(message.payload.decode('utf-8'))
     print("message received\n" + payload)
     if payload:
@@ -89,15 +98,16 @@ def _predict_steps(inp):
     inp = [float(re.match(numbers_regex, line).groups()[0])
             for line in inp.split('\n')[3:-1] if re.match(numbers_regex, line)]
 
-    weights = [41.13028054, -11.34748777, 28.91362573]
-    offset = 1215.23927059
-    steps = 0
-    tmr_steps = 0
-    for i in range(3):
-        steps += weights[i] * inp[i]
-        tmr_steps += weights[i] * inp[-3+i]
+    theta, cost = model.gradientDescent(np.array([inp][3]), steps)
+    return model.predict(np.array(inp[-3:]))
 
-    return round(steps + offset), round(tmr_steps + offset)
+#    today_steps = 0
+#    tmr_steps = 0
+#    for i in range(3):
+#        today_steps += weights[i] * inp[i]
+#        tmr_steps += weights[i] * inp[-3+i]
+
+#    return round(steps + offset), round(tmr_steps + offset)
 
 if __name__ == '__main__':
     mydev = 0
@@ -115,11 +125,17 @@ if __name__ == '__main__':
     client.loop_start()
     client.subscribe(subscribe_topic)
     client.subscribe(prompt_topic)
-
     try:
+        print('Press Ctrl+C to send information to uBit and exit')
         event_loop.run_forever()  # runs our bluetooth scan until we send a keyboard interrupt signal
     except KeyboardInterrupt:
-        print('keyboard interrupt')
+        print('you pressed ctrl+c')
+        ubit = microbit.Microbit(adapter_addr='B8:27:EB:48:04:4F',
+                                device_addr='C4:2E:8C:E3:C6:82')
+        my_text = "You're done!" if _determine_goal_met() else "Keep walking."
+        ubit.connect()
+        ubit.text = my_text
+        ubit.disconnect()
     finally:
         print('Stopping MQTT broadcast...')
         client.loop_stop()
